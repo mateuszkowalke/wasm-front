@@ -89,6 +89,7 @@ const isPaused = () => {
   return animationId === null;
 };
 
+let deltas = [];
 // This function is the same as before, except the
 // result of `requestAnimationFrame` is assigned to
 // `animationId`.
@@ -96,7 +97,7 @@ const renderLoop = () => {
   drawGrid();
   drawCells();
 
-  universe.tick();
+  deltas = universe.tick();
 
   animationId = requestAnimationFrame(renderLoop);
 };
@@ -126,44 +127,45 @@ const getIndex = (row, column) => {
 
 const drawCells = () => {
   const cellsPtr = universe.cells();
-  const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
+  const cells = new Uint8Array(memory.buffer, cellsPtr, (width * height) / 8);
 
   ctx.beginPath();
 
   // Alive cells.
   ctx.fillStyle = ALIVE_COLOR;
-  for (let row = 0; row < height; row++) {
-    for (let col = 0; col < width; col++) {
-      const idx = getIndex(row, col);
-      if (cells[idx] !== Cell.Alive) {
-        continue;
-      }
-
-      ctx.fillRect(
-        col * (CELL_SIZE + 1) + 1,
-        row * (CELL_SIZE + 1) + 1,
-        CELL_SIZE,
-        CELL_SIZE
-      );
+  for (let i = 0; i < deltas.length; i += 2) {
+    const row = deltas[i];
+    const col = deltas[i + 1];
+    const idx = getIndex(row, col);
+      console.log(cells[Math.floor(idx / 8)] & (1 << idx % 8))
+    if (!(cells[Math.floor(idx / 8)] & (1 << idx % 8))) {
+      continue;
     }
+
+    ctx.fillRect(
+      col * (CELL_SIZE + 1) + 1,
+      row * (CELL_SIZE + 1) + 1,
+      CELL_SIZE,
+      CELL_SIZE
+    );
   }
 
   // Dead cells.
   ctx.fillStyle = DEAD_COLOR;
-  for (let row = 0; row < height; row++) {
-    for (let col = 0; col < width; col++) {
-      const idx = getIndex(row, col);
-      if (cells[idx] !== Cell.Dead) {
-        continue;
-      }
-
-      ctx.fillRect(
-        col * (CELL_SIZE + 1) + 1,
-        row * (CELL_SIZE + 1) + 1,
-        CELL_SIZE,
-        CELL_SIZE
-      );
+  for (let i = 0; i < deltas.length; i += 2) {
+    const row = deltas[i];
+    const col = deltas[i + 1];
+    const idx = getIndex(row, col);
+    if (cells[Math.floor(idx / 8)] & (1 << idx % 8)) {
+      continue;
     }
+
+    ctx.fillRect(
+      col * (CELL_SIZE + 1) + 1,
+      row * (CELL_SIZE + 1) + 1,
+      CELL_SIZE,
+      CELL_SIZE
+    );
   }
 
   ctx.stroke();
