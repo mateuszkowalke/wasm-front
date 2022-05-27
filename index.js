@@ -1,4 +1,4 @@
-import { Universe, Cell } from "wasm-game-of-life";
+import { Universe } from "wasm-game-of-life";
 import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
 
 const CELL_SIZE = 5; // px
@@ -30,6 +30,30 @@ playPauseButton.addEventListener("click", (event) => {
   } else {
     pause();
   }
+});
+
+const resetRandomButton = document.getElementById("reset-random");
+resetRandomButton.addEventListener("click", () => {
+  universe.reset_random();
+  for (let i = 0; i < width * height; i += 2) {
+    deltas[i] = Math.floor(i / width);
+    deltas[i + 1] = (i % width) / 2;
+  }
+  drawGrid();
+  drawCells();
+});
+
+const resetClearButton = document.getElementById("reset-clear");
+resetClearButton.addEventListener("click", () => {
+  universe.reset_clear();
+  deltas = [];
+  for (let i = 0; i < width * height * 2; i += 2) {
+    deltas[i] = Math.floor((i / 2) / width);
+    deltas[i + 1] = (i / 2) % width;
+  }
+  drawGrid();
+  drawCells(1);
+  requestAnimationFrame(() => {});
 });
 
 const fps = new (class {
@@ -125,19 +149,27 @@ const getIndex = (row, column) => {
   return row * width + column;
 };
 
-const drawCells = () => {
+const drawCells = (flag) => {
   const cellsPtr = universe.cells();
   const cells = new Uint8Array(memory.buffer, cellsPtr, (width * height) / 8);
 
   ctx.beginPath();
 
+  if (flag) {
+    console.log("here");
+    console.log({ deltas });
+  }
   // Alive cells.
   ctx.fillStyle = ALIVE_COLOR;
   for (let i = 0; i < deltas.length; i += 2) {
     const row = deltas[i];
     const col = deltas[i + 1];
     const idx = getIndex(row, col);
-      console.log(cells[Math.floor(idx / 8)] & (1 << idx % 8))
+    if (flag) {
+      console.log({ row });
+      console.log({ col });
+      console.log(cells[Math.floor(idx / 8)] & (1 << idx % 8));
+    }
     if (!(cells[Math.floor(idx / 8)] & (1 << idx % 8))) {
       continue;
     }
@@ -169,6 +201,7 @@ const drawCells = () => {
   }
 
   ctx.stroke();
+  if (flag) console.log("here2");
 };
 
 canvas.addEventListener("click", (event) => {
