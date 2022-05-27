@@ -1,13 +1,14 @@
 import { Universe } from "wasm-game-of-life";
 import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
 
+const GRID_SIZE = 128;
 const CELL_SIZE = 5; // px
 const GRID_COLOR = "#CCCCCC";
 const DEAD_COLOR = "#FFFFFF";
 const ALIVE_COLOR = "#000000";
 
 // Construct the universe, and get its width and height.
-const universe = Universe.new();
+const universe = Universe.new(GRID_SIZE);
 const width = universe.width();
 const height = universe.height();
 
@@ -35,7 +36,7 @@ playPauseButton.addEventListener("click", (event) => {
 const resetRandomButton = document.getElementById("reset-random");
 resetRandomButton.addEventListener("click", () => {
   universe.reset_random();
-    resetDeltas();
+  resetDeltas();
   drawGrid();
   drawCells();
   requestAnimationFrame(() => {});
@@ -44,7 +45,7 @@ resetRandomButton.addEventListener("click", () => {
 const resetClearButton = document.getElementById("reset-clear");
 resetClearButton.addEventListener("click", () => {
   universe.reset_clear();
-    resetDeltas();
+  resetDeltas();
   drawGrid();
   drawCells();
   requestAnimationFrame(() => {});
@@ -123,6 +124,7 @@ const renderLoop = () => {
 
   drawGrid();
   drawCells();
+  fps.render();
 
   animationId = requestAnimationFrame(renderLoop);
 };
@@ -196,12 +198,6 @@ const drawCells = () => {
 };
 
 canvas.addEventListener("click", (event) => {
-    if (event.shiftKey) {
-
-    }
-    if (event.ctrlKey) {
-
-    }
   const boundingRect = canvas.getBoundingClientRect();
 
   const scaleX = canvas.width / boundingRect.width;
@@ -212,8 +208,13 @@ canvas.addEventListener("click", (event) => {
 
   const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), height - 1);
   const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), width - 1);
-
-  universe.toggle_cell(row, col);
+  if (event.shiftKey) {
+    universe.insert_pulsar_at_pos(row, col);
+  } else if (event.ctrlKey) {
+    universe.insert_glider_at_pos(row, col);
+  } else {
+    universe.toggle_cell(row, col);
+  }
 
   drawGrid();
   drawCells();
