@@ -35,24 +35,18 @@ playPauseButton.addEventListener("click", (event) => {
 const resetRandomButton = document.getElementById("reset-random");
 resetRandomButton.addEventListener("click", () => {
   universe.reset_random();
-  for (let i = 0; i < width * height; i += 2) {
-    deltas[i] = Math.floor(i / width);
-    deltas[i + 1] = (i % width) / 2;
-  }
+    resetDeltas();
   drawGrid();
   drawCells();
+  requestAnimationFrame(() => {});
 });
 
 const resetClearButton = document.getElementById("reset-clear");
 resetClearButton.addEventListener("click", () => {
   universe.reset_clear();
-  deltas = [];
-  for (let i = 0; i < width * height * 2; i += 2) {
-    deltas[i] = Math.floor((i / 2) / width);
-    deltas[i + 1] = (i / 2) % width;
-  }
+    resetDeltas();
   drawGrid();
-  drawCells(1);
+  drawCells();
   requestAnimationFrame(() => {});
 });
 
@@ -114,14 +108,21 @@ const isPaused = () => {
 };
 
 let deltas = [];
+function resetDeltas() {
+  deltas = [];
+  for (let i = 0; i < width * height * 2; i += 2) {
+    deltas[i] = Math.floor(i / 2 / width);
+    deltas[i + 1] = (i / 2) % width;
+  }
+}
 // This function is the same as before, except the
 // result of `requestAnimationFrame` is assigned to
 // `animationId`.
 const renderLoop = () => {
+  deltas = universe.tick();
+
   drawGrid();
   drawCells();
-
-  deltas = universe.tick();
 
   animationId = requestAnimationFrame(renderLoop);
 };
@@ -149,27 +150,18 @@ const getIndex = (row, column) => {
   return row * width + column;
 };
 
-const drawCells = (flag) => {
+const drawCells = () => {
   const cellsPtr = universe.cells();
   const cells = new Uint8Array(memory.buffer, cellsPtr, (width * height) / 8);
 
   ctx.beginPath();
 
-  if (flag) {
-    console.log("here");
-    console.log({ deltas });
-  }
   // Alive cells.
   ctx.fillStyle = ALIVE_COLOR;
   for (let i = 0; i < deltas.length; i += 2) {
     const row = deltas[i];
     const col = deltas[i + 1];
     const idx = getIndex(row, col);
-    if (flag) {
-      console.log({ row });
-      console.log({ col });
-      console.log(cells[Math.floor(idx / 8)] & (1 << idx % 8));
-    }
     if (!(cells[Math.floor(idx / 8)] & (1 << idx % 8))) {
       continue;
     }
@@ -201,10 +193,15 @@ const drawCells = (flag) => {
   }
 
   ctx.stroke();
-  if (flag) console.log("here2");
 };
 
 canvas.addEventListener("click", (event) => {
+    if (event.shiftKey) {
+
+    }
+    if (event.ctrlKey) {
+
+    }
   const boundingRect = canvas.getBoundingClientRect();
 
   const scaleX = canvas.width / boundingRect.width;
@@ -222,6 +219,7 @@ canvas.addEventListener("click", (event) => {
   drawCells();
 });
 
+resetDeltas();
 drawGrid();
 drawCells();
 play();
